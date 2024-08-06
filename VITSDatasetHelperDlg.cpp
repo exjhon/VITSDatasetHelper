@@ -1,4 +1,4 @@
-﻿
+
 // VITSDatasetHelperDlg.cpp: 实现文件
 //
 
@@ -603,6 +603,14 @@ void CVITSDatasetHelperDlg::OnDropFiles(HDROP hDropInfo)
             else if (pWnd->GetSafeHwnd() == m_editBrowse2.GetSafeHwnd() && isDirectory)
             {
                 m_editBrowse2.SetWindowTextW(filePath);
+            }
+            else if (pWnd->GetSafeHwnd() == m_editBrowse5.GetSafeHwnd() && isDirectory)
+            {
+                m_editBrowse5.SetWindowTextW(filePath);
+            }
+            else if (pWnd->GetSafeHwnd() == m_editBrowse6.GetSafeHwnd() && isDirectory)
+            {
+                m_editBrowse6.SetWindowTextW(filePath);
             }
         }
     }
