@@ -17,6 +17,9 @@
 #include <vector>
 #include <algorithm>
 #include <thread>
+#include <shlwapi.h>
+#include <regex>
+#include <sstream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -49,6 +52,17 @@ void CVITSDatasetHelperDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_MFCEDITBROWSE1, m_editBrowse2);
     DDX_Control(pDX, IDC_CHECK1, m_check1);
     DDX_Control(pDX, IDC_CHECK2, m_check2);
+    DDX_Control(pDX, IDC_MFCEDITBROWSE5, m_editBrowse5);
+    DDX_Control(pDX, IDC_RADIO5, m_radio5);
+    DDX_Control(pDX, IDC_RADIO6, m_radio6);
+    DDX_Control(pDX, IDC_MFCEDITBROWSE6, m_editBrowse6);
+    DDX_Control(pDX, IDC_EDIT1, m_edit1);
+    DDX_Control(pDX, IDC_EDIT5, m_edit5);
+    DDX_Control(pDX, IDC_RADIO1, m_radio1);
+    DDX_Control(pDX, IDC_RADIO2, m_radio2);
+    DDX_Control(pDX, IDC_RADIO3, m_radio3);
+    DDX_Control(pDX, IDC_RADIO4, m_radio4);
+    DDX_Control(pDX, IDC_BUTTON7, m_button7);
 }
 
 
@@ -59,6 +73,8 @@ BEGIN_MESSAGE_MAP(CVITSDatasetHelperDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON2, &CVITSDatasetHelperDlg::OnBnClickedButtonProcess)
     ON_WM_DROPFILES()
     ON_BN_CLICKED(IDC_BUTTON1, &CVITSDatasetHelperDlg::OnBnClickedButton1)
+    ON_BN_CLICKED(IDC_BUTTON6, &CVITSDatasetHelperDlg::OnBnClickedButton6)
+    ON_BN_CLICKED(IDC_BUTTON7, &CVITSDatasetHelperDlg::OnBnClickedButton7)
 END_MESSAGE_MAP()
 
 
@@ -72,6 +88,8 @@ BOOL CVITSDatasetHelperDlg::OnInitDialog()
     m_checkNewline.SetCheck(BST_CHECKED);
     m_check1.SetCheck(BST_CHECKED); // 设置 IDC_CHECK3 默认被勾选
     m_check2.SetCheck(BST_CHECKED); // 设置 IDC_CHECK3 默认被勾选
+    m_radio5.SetCheck(BST_CHECKED); // 设置 IDC_CHECK3 默认被勾选
+    m_radio1.SetCheck(BST_CHECKED); // 设置 IDC_CHECK3 默认被勾选
     m_btnRename.EnableWindow(FALSE);
     m_btnRestore.EnableWindow(FALSE);
     DragAcceptFiles(TRUE);
@@ -733,4 +751,227 @@ void CVITSDatasetHelperDlg::ExecuteFFmpegCommand(CString command, CString tempFi
     {
         AfxMessageBox(_T("FFmpeg命令执行失败。"));
     }
+}
+void CVITSDatasetHelperDlg::OnBnClickedButton6()
+{
+    OnButtonClicked();
+}
+
+void CVITSDatasetHelperDlg::OnButtonClicked()
+{
+    CString folderPath;
+    m_editBrowse5.GetWindowText(folderPath);
+
+    if (folderPath.IsEmpty())
+    {
+        AfxMessageBox(_T("请选择一个文件夹"));
+        return;
+    }
+
+    bool bMove = m_radio5.GetCheck() == BST_CHECKED;
+    MoveOrCopyFiles(folderPath, bMove);
+}
+
+void CVITSDatasetHelperDlg::MoveOrCopyFiles(const CString& folderPath, bool bMove)
+{
+    CFileFind finder;
+    CString searchPath = folderPath + _T("\\*.wav");
+
+    if (!finder.FindFile(searchPath))
+    {
+        AfxMessageBox(_T("没有找到WAV文件"));
+        return;
+    }
+
+    std::vector<CString> allFiles;
+    std::vector<CString> classifiedFiles;
+    std::vector<CString> unclassifiedFiles;
+    std::wregex re(L"\\[([^\\]]+)\\]"); // Regex to match [any text]
+
+    // Traverse files and categorize them
+    BOOL bWorking = TRUE;
+    while (bWorking)
+    {
+        bWorking = finder.FindNextFile();
+
+        if (finder.IsDots())
+        {
+            continue; // Skip "." and ".."
+        }
+
+        CString filePath = finder.GetFilePath();
+        CString fileName = finder.GetFileName();
+        std::wstring wsFileName(fileName.GetString());
+
+        allFiles.push_back(filePath); // Track all files
+
+        if (std::regex_search(wsFileName, re))
+        {
+            std::wsmatch match;
+            if (std::regex_search(wsFileName, match, re) && match.size() > 1)
+            {
+                CString subFolderName = CString(match[1].str().c_str());
+                CString destFolderPath = folderPath + _T("\\") + subFolderName;
+                CString destFilePath = destFolderPath + _T("\\") + fileName;
+
+                if (!PathFileExists(destFolderPath))
+                {
+                    CreateDirectory(destFolderPath, nullptr);
+                }
+
+                if (bMove)
+                {
+                    MoveFile(filePath, destFilePath);
+                }
+                else
+                {
+                    CopyFile(filePath, destFilePath, FALSE);
+                }
+
+                classifiedFiles.push_back(filePath); // Successfully classified
+            }
+        }
+        else
+        {
+            unclassifiedFiles.push_back(filePath); // Unclassified
+        }
+    }
+
+    // Ensure that all files are counted properly
+    size_t totalFound = allFiles.size();
+    size_t totalClassified = classifiedFiles.size();
+    size_t totalUnclassified = totalFound - totalClassified;
+
+    CString report;
+    report.Format(_T("操作完成\n\n总找到的WAV文件: %zu\n成功归类的WAV文件: %zu\n未归类的WAV文件: %zu"),
+        totalFound, totalClassified, totalUnclassified);
+
+    AfxMessageBox(report);
+}
+void CVITSDatasetHelperDlg::OnBnClickedButton7()
+{
+    // 获取用户输入的角色名和语言
+    CString roleName;
+    m_edit1.GetWindowText(roleName);
+    CString language;
+    m_edit5.GetWindowText(language);
+
+    // 检查角色名和语言是否为空
+    if (roleName.IsEmpty() || language.IsEmpty())
+    {
+        AfxMessageBox(_T("角色名和语言不能为空。"));
+        return;
+    }
+
+    // 获取用户输入的文件夹路径
+    CString folderPath;
+    m_editBrowse6.GetWindowText(folderPath);
+    if (folderPath.IsEmpty())
+    {
+        AfxMessageBox(_T("文件夹路径不能为空。"));
+        return;
+    }
+
+    // 获取语言值
+    CString languageValue;
+    if (IsDlgButtonChecked(IDC_RADIO1))
+        languageValue = _T("JP");
+    else if (IsDlgButtonChecked(IDC_RADIO2))
+        languageValue = _T("CN");
+    else if (IsDlgButtonChecked(IDC_RADIO3))
+        languageValue = _T("EN");
+    else if (IsDlgButtonChecked(IDC_RADIO4))
+        languageValue = language;  // 使用 IDC_EDIT5 的内容作为语言值
+
+    // 调用函数创建 .list 文件
+    CreateListFile(folderPath, roleName, languageValue);
+}
+
+void CVITSDatasetHelperDlg::CreateListFile(const CString& folderPath, const CString& roleName, const CString& language)
+{
+    CFileFind finder;
+    CString searchPath = folderPath + _T("\\*.wav");
+    BOOL bWorking = finder.FindFile(searchPath);
+
+    CString listFileName = folderPath + _T("\\") + roleName + _T(".list");
+    std::ofstream outFile((LPCTSTR)listFileName, std::ios::out | std::ios::binary);
+
+    if (!outFile.is_open())
+    {
+        AfxMessageBox(_T("无法创建角色名.list 文件。"));
+        return;
+    }
+
+    while (bWorking)
+    {
+        bWorking = finder.FindNextFile();
+        if (finder.IsDirectory() || finder.IsDots()) continue;
+
+        CString fileName = finder.GetFileName();
+        CString extractedText = ExtractTextFromFileName(fileName);
+
+        std::string utf8FileName = CStringToUTF8(fileName);
+        std::string utf8RoleName = CStringToUTF8(roleName);
+        std::string utf8Language = CStringToUTF8(language);
+        std::string utf8ExtractedText = CStringToUTF8(extractedText);
+
+        // 拼凑行
+        std::string line = utf8FileName + "|" + utf8RoleName + "|" + utf8Language + "|" + utf8ExtractedText;
+
+        // 删除每个 | 符号前面的一个字符和每行最后一个字符
+        // 使用 stringstream 来处理
+        std::stringstream ss(line);
+        std::string processedLine;
+        std::string segment;
+
+        while (std::getline(ss, segment, '|'))
+        {
+            // 删除 segment 前的一个字符（假设 segment 不是空的）
+            if (segment.length() > 0)
+            {
+                segment.erase(segment.length() - 1); // 删除 segment 前的一个字符
+            }
+            processedLine += segment + "|";
+        }
+
+        // 删除最后一个字符（即最后一个 |）
+        if (processedLine.length() > 0)
+        {
+            processedLine.pop_back();
+        }
+
+        // 写入文件并添加 Windows 风格的换行符（CR+LF）
+        outFile.write(processedLine.c_str(), processedLine.size());
+        outFile.write("\r\n", 2); // 添加 CR+LF
+    }
+
+    outFile.close();
+    AfxMessageBox(_T("角色名.list 文件创建成功。"));
+}
+
+CString CVITSDatasetHelperDlg::ExtractTextFromFileName(const CString& fileName)
+{
+    CString text;
+    int startPos = fileName.Find(_T('#'));
+    if (startPos != -1)
+    {
+        int endPos = fileName.Find(_T('#'), startPos + 1);
+        if (endPos != -1)
+        {
+            text = fileName.Mid(startPos + 1, endPos - startPos - 1);
+        }
+        else
+        {
+            text = fileName.Mid(startPos + 1);
+        }
+    }
+    return text;
+}
+
+std::string CVITSDatasetHelperDlg::CStringToUTF8(const CString& str)
+{
+    int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
+    std::string utf8String(sizeNeeded, 0);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, &utf8String[0], sizeNeeded, NULL, NULL);
+    return utf8String;
 }

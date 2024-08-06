@@ -67,7 +67,24 @@ private:
     bool FileExists(const CString& filePath);
     void LogMessage(const CString& message);
     void ClearFileNames();
+    void OnButtonClicked();  // Handler for IDC_BUTTON6
+    void MoveOrCopyFiles(const CString& folderPath, bool bMove);
 
+    CMFCEditBrowseCtrl m_editBrowse5;  // Edit browse control
+    CButton m_radio5;                  // Radio button IDC_RADIO5
+    CButton m_radio6;                  // Radio button IDC_RADIO6
+    CMFCEditBrowseCtrl m_editBrowse6;
+    CEdit m_edit1;
+    CEdit m_edit5;
+    CButton m_radio1;
+    CButton m_radio2;
+    CButton m_radio3;
+    CButton m_radio4;
+    CButton m_button7;
+
+    void CreateListFile(const CString& folderPath, const CString& roleName, const CString& language);
+    CString ExtractTextFromFileName(const CString& fileName);
+    std::string CStringToUTF8(const CString& str); // 声明 CStringToUTF8 函数
 
 
 public:
@@ -84,11 +101,11 @@ public:
     double GetAudioDuration(CString filePath);
     void ExecuteFFmpegCommand(CString command, CString tempFilePath, CString originalFilePath);
     void ProcessFilesInBackground(CString folderPath, bool extendShortFiles, bool trimLongFiles);
-
+    afx_msg void OnBnClickedButton6(); // Button click handler
 // 实现
 protected:
 	HICON m_hIcon;
-
+    afx_msg void OnBnClickedButton7();
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
