@@ -162,6 +162,8 @@ void CVITSDatasetHelperDlg::BrowseFolder()
 
     DisplayFileNames();
     m_btnRename.EnableWindow(TRUE);
+    m_btnRestore.EnableWindow(FALSE);
+    m_editNewFileNames.SetReadOnly(FALSE);
 }
 
 void CVITSDatasetHelperDlg::DisplayFileNames()
@@ -234,13 +236,13 @@ bool CVITSDatasetHelperDlg::FileExists(const CString& filePath)
 
 void CVITSDatasetHelperDlg::LogMessage(const CString& message)
 {
-    CStdioFile logFile;
-    if (logFile.Open(_T("log.txt"), CFile::modeCreate | CFile::modeNoTruncate | CFile::modeWrite | CFile::typeText))
-    {
-        logFile.SeekToEnd();
-        logFile.WriteString(message + _T("\n"));
-        logFile.Close();
-    }
+   // CStdioFile logFile;
+   // if (logFile.Open(_T("log.txt"), CFile::modeCreate | CFile::modeNoTruncate | CFile::modeWrite | CFile::typeText))
+   // {
+   //     logFile.SeekToEnd();
+  //      logFile.WriteString(message + _T("\n"));
+  //      logFile.Close();
+  //  }
 }
 
 void CVITSDatasetHelperDlg::RenameFiles()
