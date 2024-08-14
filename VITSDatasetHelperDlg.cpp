@@ -867,7 +867,13 @@ void CVITSDatasetHelperDlg::OnBnClickedButton7()
     m_edit5.GetWindowText(language);
 
     // 检查角色名和语言是否为空
-    if (roleName.IsEmpty() || language.IsEmpty())
+    if (roleName.IsEmpty())
+    {
+        AfxMessageBox(_T("角色名和语言不能为空。"));
+        return;
+    }
+    // 检查角色名和语言是否为空
+    if (IsDlgButtonChecked(IDC_RADIO4) && language.IsEmpty())
     {
         AfxMessageBox(_T("角色名和语言不能为空。"));
         return;
